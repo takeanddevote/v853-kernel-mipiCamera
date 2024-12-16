@@ -60,7 +60,11 @@ static void __init of_sunxi_fixed_clk_setup(struct device_node *node)
 		of_clk_add_provider(node, of_clk_src_simple_get, clk);
 	}
 }
-
+/* 
+factor_clk：这一类clock具有固定的factor（即multiplier和divider），clock的频率是由parent clock的频率，乘以mul，除以div，
+	多用于一些具有固定分频系数的clock。由于parent clock的频率可以改变，因而fix factor clock也可该改变频率，
+	因此也会提供.recalc_rate/.set_rate/.round_rate等回调 
+*/
 static void __init of_sunxi_fixed_factor_clk_setup(struct device_node *node)
 {
 	struct clk *clk;
@@ -90,8 +94,8 @@ static void __init of_sunxi_fixed_factor_clk_setup(struct device_node *node)
 	clk = clk_register_fixed_factor(NULL, clk_name, parent_name, 0,
 					mult, div);
 	if (!IS_ERR(clk)) {
-		clk_register_clkdev(clk, clk_name, NULL);
-		of_clk_add_provider(node, of_clk_src_simple_get, clk);
+		clk_register_clkdev(clk, clk_name, NULL);	/* 注册到 clocks 链表 */
+		of_clk_add_provider(node, of_clk_src_simple_get, clk); /* 创建 of_clk_provider，绑定data，并注册到全局 of_clk_providers 链表 */
 	}
 }
 

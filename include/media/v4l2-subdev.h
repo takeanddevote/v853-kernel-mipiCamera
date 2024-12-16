@@ -807,14 +807,14 @@ struct v4l2_subdev {
 	struct list_head list;
 	struct module *owner;
 	bool owner_v4l2_dev;
-	u32 flags;
+	u32 flags;					/* V4L2_SUBDEV_FL_HAS_DEVNODE：subdev需要创建设备文件 V4L2_SUBDEV_FL_IS_I2C：subdev是个i2c设备 */
 	struct v4l2_device *v4l2_dev;
 	const struct v4l2_subdev_ops *ops;
 	const struct v4l2_subdev_internal_ops *internal_ops;
 	struct v4l2_ctrl_handler *ctrl_handler;
 	char name[V4L2_SUBDEV_NAME_SIZE];
 	u32 grp_id;
-	void *dev_priv;
+	void *dev_priv;		/* 如果subdev是个i2c设备，则绑定 i2c_client */
 	void *host_priv;
 	struct video_device *devnode;
 	struct device *dev;

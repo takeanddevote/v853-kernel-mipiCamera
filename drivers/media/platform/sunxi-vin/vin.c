@@ -1019,7 +1019,7 @@ static struct v4l2_subdev *__vin_subdev_register(struct vin_md *vind,
 			vin_log(VIN_LOG_MD, "%s register OK!\n", name);
 		}
 	} else if (type == VIN_MODULE_TYPE_I2C) {
-		struct i2c_adapter *adapter = i2c_get_adapter(bus_sel);
+		struct i2c_adapter *adapter = i2c_get_adapter(bus_sel);	/* 通过总线号获取i2c控制器 */
 
 		if (adapter == NULL) {
 			vin_err("%s request i2c%d adapter failed!\n", name, bus_sel);
@@ -1271,14 +1271,14 @@ static int vin_md_register_entities(struct vin_md *vind,
 		struct sensor_list *sensors = NULL;
 
 		module = &vind->modules[i];
-		sensors = &vind->modules[i].sensors;
+		sensors = &vind->modules[i].sensors;	/* 获取sensor节点的 modules_config */
 
 		sensors->valid_idx = NO_VALID_SENSOR;
 		for (j = 0; j < sensors->detect_num; j++) {
 			if (sensors->use_sensor_list == 1)
 				__vin_handle_sensor_info(&sensors->inst[j]);
 
-			if (__vin_register_module(vind, module, j)) {
+			if (__vin_register_module(vind, module, j)) {	/* 注册sensor的 subdev 到 v4l2_device 里 */
 				sensors->valid_idx = j;
 				break;
 			}
@@ -1293,7 +1293,7 @@ static int vin_md_register_entities(struct vin_md *vind,
 		module->modules.flash.sd = sunxi_flash_get_subdev(
 						module->modules.flash.id);
 
-		ret = v4l2_device_register_subdev(&vind->v4l2_dev,
+		ret = v4l2_device_register_subdev(&vind->v4l2_dev,	/* 把flash的 subdev注册到 v4l2_device 里 */
 					    module->modules.flash.sd);
 		if (ret < 0)
 			vin_log(VIN_LOG_MD, "flash%d register fail!\n",
@@ -1315,7 +1315,8 @@ static int vin_md_register_entities(struct vin_md *vind,
 			vind->vinc[i] = NULL;
 			continue;
 		}
-		vin_md_register_core_entity(vind, vind->vinc[i]);
+		/* 注册vin_core的subdev到v4l2_devic里，导致  vin_capture_subdev_registered 调用，然后创建 pipeline的最后一个video_device，即用户操作的设备节点 */
+		vin_md_register_core_entity(vind, vind->vinc[i]);	
 	}
 
 	for (i = 0; i < VIN_MAX_CSI; i++) {
@@ -1498,7 +1499,7 @@ static int vin_create_media_links(struct vin_md *vind)
 		if (mipi != NULL) {
 			/*link MIPI sensor*/
 			module = &vind->modules[vinc->rear_sensor];
-			sensor_link_to_mipi_csi(module, mipi);
+			sensor_link_to_mipi_csi(module, mipi); /* 建立sensor和mipi的连接 */
 			if (vinc->rear_sensor != vinc->front_sensor) {
 				module = &vind->modules[vinc->front_sensor];
 				sensor_link_to_mipi_csi(module, mipi);
@@ -1513,7 +1514,7 @@ static int vin_create_media_links(struct vin_md *vind)
 			sink = &csi->entity;
 			ret = media_create_pad_link(source, MIPI_PAD_SOURCE,
 						       sink, CSI_PAD_SINK,
-						       MEDIA_LNK_FL_ENABLED);
+						       MEDIA_LNK_FL_ENABLED);	/* 建立mip到csi的连接 */
 		} else {
 			/*link Bt.601 sensor*/
 			if (csi == NULL) {
@@ -1546,7 +1547,7 @@ static int vin_create_media_links(struct vin_md *vind)
 			sink = &tdm_rx->entity;
 			ret = media_create_pad_link(source, SCALER_PAD_SOURCE,
 						sink, VIN_SD_PAD_SINK,
-						MEDIA_LNK_FL_ENABLED);
+						MEDIA_LNK_FL_ENABLED);	/* 建立csi到tdm的连接 */
 			vin_log(VIN_LOG_MD, "created link [%s] %c> [%s]\n",
 				source->name, '=', sink->name);
 
@@ -1554,7 +1555,7 @@ static int vin_create_media_links(struct vin_md *vind)
 			sink = &isp->entity;
 			ret = media_create_pad_link(source, SCALER_PAD_SOURCE,
 						sink, VIN_SD_PAD_SINK,
-						MEDIA_LNK_FL_ENABLED);
+						MEDIA_LNK_FL_ENABLED);	/* 建立TDM到isp的连接 */
 			vin_log(VIN_LOG_MD, "created link [%s] %c> [%s]\n",
 				source->name, '=', sink->name);
 		} else {
@@ -1763,7 +1764,7 @@ static int vin_probe(struct platform_device *pdev)
 	enum module_type sensor_type, act_type;
 	int ret, i, num;
 
-	vind = devm_kzalloc(dev, sizeof(*vind), GFP_KERNEL);
+	vind = devm_kzalloc(dev, sizeof(*vind), GFP_KERNEL);		/* 创建 vin_md 实例 */
 	if (!vind)
 		return -ENOMEM;
 
@@ -1781,7 +1782,7 @@ static int vin_probe(struct platform_device *pdev)
 	vind->sensor_power_on = true;
 #endif
 
-	vind->base = of_iomap(np, 0);
+	vind->base = of_iomap(np, 0);		/* 处理寄存器基地址映射 */
 	if (!vind->base) {
 		vind->is_empty = 1;
 		vind->base = kzalloc(0x400, GFP_KERNEL);
@@ -1829,7 +1830,7 @@ static int vin_probe(struct platform_device *pdev)
 	vind->modules[1].sensors.inst[0].cam_addr = i2c1_addr;
 	strcpy(vind->modules[1].sensors.inst[0].cam_name, ccm1);
 
-	parse_modules_from_device_tree(vind);
+	parse_modules_from_device_tree(vind);	/* 解析所有sensor节点和vinc节点。并填充 vin_md.modules_config */
 
 	for (num = 0; num < VIN_MAX_DEV; num++) {
 		sensor_type = vind->modules[num].sensors.sensor_bus_type;
@@ -1845,11 +1846,11 @@ static int vin_probe(struct platform_device *pdev)
 		}
 	}
 
-	vin_gpio_request(vind);
+	vin_gpio_request(vind);	/* 申请所有模块的节点的gpio权限 */
 
-	strlcpy(vind->media_dev.model, "Allwinner Vin",
-		sizeof(vind->media_dev.model));
+	strlcpy(vind->media_dev.model, "Allwinner Vin", sizeof(vind->media_dev.model));	/* 设置media_device名字为 "Allwinner Vin"  */
 
+	/* 一个 vind 设备树节点，对应一个 media_device ，以及一个 v4l2_device ，这样就能管理下面的所有subdev和连接了 */
 	vind->media_dev.ops = &media_device_ops;
 	vind->media_dev.dev = dev;
 
@@ -1857,22 +1858,22 @@ static int vin_probe(struct platform_device *pdev)
 	v4l2_dev->mdev = &vind->media_dev;
 	strlcpy(v4l2_dev->name, "sunxi-vin", sizeof(v4l2_dev->name));
 
-	ret = v4l2_device_register(dev, &vind->v4l2_dev);
+	ret = v4l2_device_register(dev, &vind->v4l2_dev);	/* 只是初始化 v4l2_device ，绑定 device */
 	if (ret < 0) {
 		vin_err("Failed to register v4l2_device: %d\n", ret);
 		goto unmap;
 	}
-	media_device_init(&vind->media_dev);
-	ret = media_device_register(&vind->media_dev);
+	media_device_init(&vind->media_dev);				/* 初始化 media_device */
+	ret = media_device_register(&vind->media_dev);	/* 注册 media_device */
 	if (ret < 0) {
 		vin_err("Failed to register media device: %d\n",
 			 ret);
 		goto err_md;
 	}
 
-	platform_set_drvdata(pdev, vind);
+	platform_set_drvdata(pdev, vind);		/* 重点：绑定 vin_md 到平台设备的私有数据  */
 
-	ret = vin_md_get_clocks(vind);
+	ret = vin_md_get_clocks(vind);	/* 处理时钟 */
 	if (ret)
 		goto err_clk;
 
@@ -1883,12 +1884,12 @@ static int vin_probe(struct platform_device *pdev)
 #endif
 
 #if !defined CONFIG_VIN_INIT_MELIS
-	vin_md_clk_enable(vind);
+	vin_md_clk_enable(vind);	/* 使能clk */
 #endif
 	vin_set_cci_power(vind, 1);
 
 	if (dev->of_node) {
-		ret = vin_md_register_entities(vind, dev->of_node);
+		ret = vin_md_register_entities(vind, dev->of_node);	/* 注册subdev到  v4l2_device 里*/
 	} else {
 		vin_err("Device tree of_node is NULL!\n");
 		ret = -ENOSYS;
@@ -1901,7 +1902,7 @@ static int vin_probe(struct platform_device *pdev)
 #endif
 
 	mutex_lock(&vind->media_dev.graph_mutex);
-	ret = vin_create_media_links(vind);
+	ret = vin_create_media_links(vind);	/* 建立subdev之间的的media连接 */
 	mutex_unlock(&vind->media_dev.graph_mutex);
 	if (ret) {
 		vin_err("vin_create_media_links error\n");
@@ -1918,7 +1919,7 @@ static int vin_probe(struct platform_device *pdev)
 		goto err_clk;
 	}
 
-	ret = v4l2_device_register_subdev_nodes(&vind->v4l2_dev);
+	ret = v4l2_device_register_subdev_nodes(&vind->v4l2_dev);	/* 为需要暴露到用户空间的subdev注册 video_device，即字符设备文件 */
 	if (ret)
 		goto err_clk;
 
@@ -2032,57 +2033,57 @@ static int __init vin_init(void)
 	int ret;
 
 	vin_log(VIN_LOG_MD, "Welcome to Video Input driver\n");
-	ret = sunxi_csi_platform_register();
+	ret = sunxi_csi_platform_register();	/* 注册平台驱动： csi_platform_driver */
 	if (ret) {
 		vin_err("Sunxi csi driver register failed\n");
 		return ret;
 	}
 
 #ifdef SUPPORT_ISP_TDM
-	ret = sunxi_tdm_platform_register();
+	ret = sunxi_tdm_platform_register();	/* tdm_platform_driver */
 	if (ret) {
 		vin_err("Sunxi tdm driver register failed\n");
 		return ret;
 	}
 #endif
 
-	ret = sunxi_isp_platform_register();
+	ret = sunxi_isp_platform_register();	/* isp_platform_driver */
 	if (ret) {
 		vin_err("Sunxi isp driver register failed\n");
 		return ret;
 	}
 
-	ret = sunxi_mipi_platform_register();
+	ret = sunxi_mipi_platform_register();	/* mipi_platform_driver */
 	if (ret) {
 		vin_err("Sunxi mipi driver register failed\n");
 		return ret;
 	}
 
-	ret = sunxi_flash_platform_register();
+	ret = sunxi_flash_platform_register();	/* 空 */
 	if (ret) {
 		vin_err("Sunxi flash driver register failed\n");
 		return ret;
 	}
 
-	ret = sunxi_scaler_platform_register();
+	ret = sunxi_scaler_platform_register();		/* scaler_platform_driver */
 	if (ret) {
 		vin_err("Sunxi scaler driver register failed\n");
 		return ret;
 	}
 
-	ret = sunxi_vin_core_register_driver();
+	ret = sunxi_vin_core_register_driver();		/* vin_core_driver */
 	if (ret) {
 		vin_err("Sunxi vin register driver failed!\n");
 		return ret;
 	}
 
-	ret = sunxi_vin_debug_register_driver();
+	ret = sunxi_vin_debug_register_driver();	/* debugfs */
 	if (ret) {
 		vin_err("Sunxi vin debug register driver failed!\n");
 		return ret;
 	}
 
-	ret = platform_driver_register(&vin_driver);
+	ret = platform_driver_register(&vin_driver);	/* 注册vin自己的平台驱动 -》 vin_probe  */
 	if (ret) {
 		vin_err("Sunxi vin register driver failed!\n");
 		return ret;

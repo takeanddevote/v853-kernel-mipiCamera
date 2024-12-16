@@ -2501,6 +2501,7 @@ out:
 	return ret;
 }
 
+/* 创建一个 clk，绑定 clk_core，并添加到clk_hw.core.clks链表中  */
 struct clk *__clk_create_clk(struct clk_hw *hw, const char *dev_id,
 			     const char *con_id)
 {
@@ -3026,12 +3027,12 @@ EXPORT_SYMBOL_GPL(clk_notifier_unregister);
  * @data: context pointer to be passed into @get callback
  */
 struct of_clk_provider {
-	struct list_head link;
+	struct list_head link;		/* 添加到全局链表 of_clk_provider */
 
-	struct device_node *node;
+	struct device_node *node;	/* 指向provider的设备树节点，consumer通过phader引用设备树节点，然后通过node在全局链表找到 of_clk_provider */
 	struct clk *(*get)(struct of_phandle_args *clkspec, void *data);
 	struct clk_hw *(*get_hw)(struct of_phandle_args *clkspec, void *data);
-	void *data;
+	void *data;	/* 绑定provider的私有数据，比如 clk */
 };
 
 static const struct of_device_id __clk_of_table_sentinel
@@ -3088,6 +3089,7 @@ EXPORT_SYMBOL_GPL(of_clk_hw_onecell_get);
  * @clk_src_get: callback for decoding clock
  * @data: context pointer for @clk_src_get callback.
  */
+ /* 创建 of_clk_provider，绑定data，并注册到全局 of_clk_providers 链表 */
 int of_clk_add_provider(struct device_node *np,
 			struct clk *(*clk_src_get)(struct of_phandle_args *clkspec,
 						   void *data),
@@ -3096,16 +3098,16 @@ int of_clk_add_provider(struct device_node *np,
 	struct of_clk_provider *cp;
 	int ret;
 
-	cp = kzalloc(sizeof(struct of_clk_provider), GFP_KERNEL);
+	cp = kzalloc(sizeof(struct of_clk_provider), GFP_KERNEL);	/* 分配 of_clk_provider */
 	if (!cp)
 		return -ENOMEM;
 
 	cp->node = of_node_get(np);
-	cp->data = data;
+	cp->data = data;	/* 绑定私有数据，比如 struct clk */
 	cp->get = clk_src_get;
 
 	mutex_lock(&of_clk_mutex);
-	list_add(&cp->link, &of_clk_providers);
+	list_add(&cp->link, &of_clk_providers);	/* 注册 of_clk_provider 到全局 of_clk_providers */
 	mutex_unlock(&of_clk_mutex);
 	pr_debug("Added clock from %s\n", np->full_name);
 
@@ -3200,10 +3202,10 @@ struct clk *__of_clk_get_from_provider(struct of_phandle_args *clkspec,
 
 	/* Check if we have such a provider in our array */
 	mutex_lock(&of_clk_mutex);
-	list_for_each_entry(provider, &of_clk_providers, link) {
-		if (provider->node == clkspec->np) {
-			hw = __of_clk_get_hw_from_provider(provider, clkspec);
-			clk = __clk_create_clk(hw, dev_id, con_id);
+	list_for_each_entry(provider, &of_clk_providers, link) {	/* 遍历 of_clk_providers 链表 */
+		if (provider->node == clkspec->np) {	/* 找到provider，即设备节点相同 */
+			hw = __of_clk_get_hw_from_provider(provider, clkspec);	/* 调用生产者的get底层get函数 */
+			clk = __clk_create_clk(hw, dev_id, con_id);	/* 创建一个 clk，绑定 clk_core，并添加到clk_hw.core.clks链表中  */
 		}
 
 		if (!IS_ERR(clk)) {

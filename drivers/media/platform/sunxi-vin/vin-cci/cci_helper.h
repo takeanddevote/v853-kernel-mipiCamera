@@ -36,16 +36,17 @@
 #include <linux/i2c.h>
 #include <media/v4l2-subdev.h>
 #include <media/v4l2-device.h>
-enum cci_dev_type {
-	CCI_TYPE_SENSOR,
-	CCI_TYPE_ACT,
-	CCI_TYPE_FLASH,
+/* CCI：camera control interface，摄像头控制接口，一般是i2c，摄像头可以包含三个硬件：传感器、执行器、闪关灯 */
+enum cci_dev_type {	
+	CCI_TYPE_SENSOR,	/* cci控制传感器 */
+	CCI_TYPE_ACT,		/* cci控制执行器，如镜头转动、对焦等 */
+	CCI_TYPE_FLASH,		/* cci控制闪光灯 */
 };
 
 struct cci_driver {
 	unsigned short id;
 	char name[32];
-	enum cci_dev_type type;
+	enum cci_dev_type type;		/* cci控制的是摄像头的哪个部件 */
 	struct device cci_device;
 	struct device_attribute dev_attr_cci;
 	unsigned short cci_id;

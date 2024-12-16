@@ -407,8 +407,8 @@ struct media_ioctl_info {
 };
 
 static const struct media_ioctl_info ioctl_info[] = {
-	MEDIA_IOC(DEVICE_INFO, media_device_get_info, MEDIA_IOC_FL_GRAPH_MUTEX),
-	MEDIA_IOC(ENUM_ENTITIES, media_device_enum_entities, MEDIA_IOC_FL_GRAPH_MUTEX),
+	MEDIA_IOC(DEVICE_INFO, media_device_get_info, MEDIA_IOC_FL_GRAPH_MUTEX),		/* MEDIA_IOC_DEVICE_INFO */
+	MEDIA_IOC(ENUM_ENTITIES, media_device_enum_entities, MEDIA_IOC_FL_GRAPH_MUTEX),	/* MEDIA_IOC_ENUM_ENTITIES */
 	MEDIA_IOC(ENUM_LINKS, media_device_enum_links, MEDIA_IOC_FL_GRAPH_MUTEX),
 	MEDIA_IOC(SETUP_LINK, media_device_setup_link, MEDIA_IOC_FL_GRAPH_MUTEX),
 	MEDIA_IOC(G_TOPOLOGY, media_device_get_topology, MEDIA_IOC_FL_GRAPH_MUTEX),
@@ -715,27 +715,27 @@ int __must_check __media_device_register(struct media_device *mdev,
 	struct media_devnode *devnode;
 	int ret;
 
-	devnode = kzalloc(sizeof(*devnode), GFP_KERNEL);
+	devnode = kzalloc(sizeof(*devnode), GFP_KERNEL);	/* 分配 media_devnode */
 	if (!devnode)
 		return -ENOMEM;
 
 	/* Register the device node. */
 	mdev->devnode = devnode;
-	devnode->fops = &media_device_fops;
+	devnode->fops = &media_device_fops;			/* 设置media操作函数集 media_device_fops */
 	devnode->parent = mdev->dev;
 	devnode->release = media_device_release;
 
 	/* Set version 0 to indicate user-space that the graph is static */
 	mdev->topology_version = 0;
 
-	ret = media_devnode_register(mdev, devnode, owner);
+	ret = media_devnode_register(mdev, devnode, owner);	/* 1、注册 media_devnode 到media总线 2、注册字符设备，ops为 media_devnode_fops */
 	if (ret < 0) {
 		/* devnode free is handled in media_devnode_*() */
 		mdev->devnode = NULL;
 		return ret;
 	}
 
-	ret = device_create_file(&devnode->dev, &dev_attr_model);
+	ret = device_create_file(&devnode->dev, &dev_attr_model);	/* 创建model属性文件 */
 	if (ret < 0) {
 		/* devnode free is handled in media_devnode_*() */
 		mdev->devnode = NULL;

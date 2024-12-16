@@ -65,7 +65,7 @@
 
 struct sensor_format_struct {
 	__u8 *desc;
-	u32 mbus_code;
+	u32 mbus_code;				/* bayer格式 */
 	struct regval_list *regs;
 	int regs_size;
 	int bpp; /* Bytes per pixel */
@@ -73,7 +73,7 @@ struct sensor_format_struct {
 
 struct sensor_info {
 	struct v4l2_subdev sd;
-	struct media_pad sensor_pads[SENSOR_PAD_NUM];
+	struct media_pad sensor_pads[SENSOR_PAD_NUM];	/* 一个pad，即source */
 	struct mutex lock;
 	struct sensor_format_struct *fmt;	/* Current format */
 	struct sensor_win_size *current_wins;

@@ -217,7 +217,7 @@ build_dts(){
 
 build_kernel()
 {
-    echo "Building kernel"
+    echo "Building kernel.."
 
     cd ${LICHEE_KDIR}
     rm -rf output/
@@ -282,8 +282,7 @@ build_kernel()
                 linaro/configs/sunxi-sata-${ARCH}.conf
 	    fi
     fi
-
-    make ARCH=${ARCH} CROSS_COMPILE="${CCACHE_Y}${CROSS_COMPILE}" -j${LICHEE_JLEVEL} ${arch_target} modules
+    bear make ARCH=${ARCH} CROSS_COMPILE="${CCACHE_Y}${CROSS_COMPILE}" -j${LICHEE_JLEVEL} ${arch_target} modules
     build_check
     update_kern_ver
 

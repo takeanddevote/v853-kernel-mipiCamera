@@ -1852,7 +1852,7 @@
 				sensor0_twi_cci_id = <2>;
 				sensor0_twi_addr = <0x78>;
 				sensor0_mclk_id = <0>;
-				sensor0_pos = "rear";
+				sensor0_pos = "rear";		//sensor的物理位置，前方、后方等 
 				sensor0_isp_used = <0>;
 				sensor0_fmt = <0>;
 				sensor0_stby_mode = <0>;

@@ -571,30 +571,30 @@ static int get_act_slave(struct device_node *np, const char *name,
 struct FetchFunArr {
 	char *sub;
 	int flag;
-	int (*fun)(struct device_node *, const char *,
-		    struct sensor_list *);
+	/* 接口作用是从设备树节点中，获取xxx属性的值，并设置到sensor_list对应的成员中 */
+	int (*fun)(struct device_node *, const char *, struct sensor_list *);
 };
-
+/* 目的是从sensor@x 设备树节点中，获取属性值，并填充 sensor_list 结构体 */
 static struct FetchFunArr fetch_camera[] = {
-	{"mname", 0, get_mname,},
-	{"twi_addr", 0, get_twi_addr,},
-	{"twi_cci_spi", 1, get_twi_cci_spi,},
-	{"twi_cci_id", 1, get_twi_id,},
+	{"mname", 0, get_mname,},				/* 模块名字 */
+	{"twi_addr", 0, get_twi_addr,},			/* 设备地址 */
+	{"twi_cci_spi", 1, get_twi_cci_spi,},	/* 通信总线类型，spi 或 i2c */
+	{"twi_cci_id", 1, get_twi_id,},			/* 总线类型下的总线号 */
 	{"mclk_id", 1, get_mclk_id,},
-	{"pos", 1, get_pos,},
+	{"pos", 1, get_pos,},					/* sensor的物理位置，前方、后方等 */
 	{"isp_used", 1, get_isp_used,},
-	{"fmt", 1, get_fmt,},
-	{"vflip", 1, get_vflip,},
+	{"fmt", 1, get_fmt,},					/* 像素输出格式？ */
+	{"vflip", 1, get_vflip,},				/* 垂直翻转 */
 	{"hflip", 1, get_hflip,},
-	{"cameravdd", 1, get_cameravdd,},
+	{"cameravdd", 1, get_cameravdd,},		/*  */
 	{"cameravdd_vol", 1, get_cameravdd_vol},
 	{"iovdd", 1, get_iovdd,},
-	{"iovdd_vol", 1, get_iovdd_vol},
+	{"iovdd_vol", 1, get_iovdd_vol},		/* iovdd的电压1.8 / 3.3 */
 	{"avdd", 1, get_avdd,},
 	{"avdd_vol", 1, get_avdd_vol,},
 	{"dvdd", 1, get_dvdd,},
 	{"dvdd_vol", 1, get_dvdd_vol,},
-	{"power_en", 1, get_power_en,},
+	{"power_en", 1, get_power_en,},		/* gpio引脚编号 */
 	{"reset", 1, get_reset,},
 	{"pwdn", 1, get_pwdn,},
 	{"sm_hs", 1, get_sm_hs,},
@@ -623,6 +623,7 @@ static struct FetchFunArr fetch_actuator[] = {
 };
 #endif
 
+/* 解析所有sensor节点和vinc节点。并填充 vin_md.modules_config */
 int parse_modules_from_device_tree(struct vin_md *vind)
 {
 #ifdef FPGA_VER
@@ -762,10 +763,10 @@ int parse_modules_from_device_tree(struct vin_md *vind)
 	const __be32 *list;
 #endif
 
-	for_each_available_child_of_node(parent, child) {
-		if (!strcmp(child->name, "sensor")) {
+	for_each_available_child_of_node(parent, child) { /* 处理子设备名字为 sensor 的节点 */
+		if (!strcmp(child->name, "sensor")) {	
 			cam = child;
-			sscanf(cam->type, "sensor%d", &i);
+			sscanf(cam->type, "sensor%d", &i);	/* device_type 字符串属性中，获取sensor的id，这个id用来索引 modules */
 			vin_log(VIN_LOG_CONFIG, "get sensor%d config for device tree\n", i);
 			module = &vind->modules[i];
 			sensors = &module->sensors;
@@ -778,14 +779,14 @@ int parse_modules_from_device_tree(struct vin_md *vind)
 			fetch_camera[0].flag = 1;
 			fetch_camera[1].flag = 1;
 		}
-		for (j = 0; j < ARRAY_SIZE(fetch_camera); j++) {
-			if (!fetch_camera[j].flag)
+		/* 解析设备树节点，并填充 sensor_list 实例 */
+		for (j = 0; j < ARRAY_SIZE(fetch_camera); j++) {	/* 遍历 fetch_camera 数组 */
+			if (!fetch_camera[j].flag)	/* 处理flag不为0的元素 */
 				continue;
 
-			sprintf(property, "%s_%s",
-				cam->type, fetch_camera[j].sub);
-			fetch_camera[j].fun(cam,
-				property, sensors);
+			sprintf(property, "%s_%s", cam->type, fetch_camera[j].sub); /* 组成类似 sensor0_twi_cci_spi 字符串，这个是设备树sensorx节点的属性值 */
+			fetch_camera[j].fun(cam, property, sensors);	
+			/* 调用对应函数 get_twi_cci_spi 读取of节点的 sensor0_twi_cci_spi 属性的值，这是bus类型，即是i2c还是spi接口控制sensor */
 		}
 
 #ifdef CONFIG_ACTUATOR_MODULE
@@ -859,17 +860,17 @@ int parse_modules_from_device_tree(struct vin_md *vind)
 		sensors->detect_num = 1;
 	}
 
-	for_each_available_child_of_node(parent, child) {
+	for_each_available_child_of_node(parent, child) {			/* 处理名字为 vinc 的节点 */
 		if (strcmp(child->name, "vinc"))
 			continue;
 
-		sprintf(property, "%s_rear_sensor_sel", child->type);
+		sprintf(property, "%s_rear_sensor_sel", child->type);		/* 获取 vincx__rear_sensor_sel 属性，即sensor的id */
 		if (get_value_int(child, property, &i))
 			i = 0;
-		module = &vind->modules[i];
+		module = &vind->modules[i];	/* 获取sensor id对应的 modules_config */
 		sensors = &module->sensors;
-		sprintf(property, "%s_csi_sel", child->type);
-		get_value_int(child, property, &sensors->csi_sel);
+		sprintf(property, "%s_csi_sel", child->type);	
+		get_value_int(child, property, &sensors->csi_sel);	/* 获取 vincx_csi_sel 属性，即vinc连接哪个csi */
 
 		if (sensors->use_sensor_list == 0xff) {
 			sprintf(property, "%s_sensor_list", child->type);

@@ -128,10 +128,10 @@ struct vin_power {
 	int power_vol;
 	char power_str[32];
 };
-struct sensor_instance {
+struct sensor_instance {	/* 描述一个senor，信息来则sensor设备树节点 */
 	char cam_name[I2C_NAME_SIZE];
-	int cam_addr;
-	int cam_type;
+	int cam_addr;		/* 摄像头地址，比如i2c地址 */
+	int cam_type;		/* SENSOR_RAW / SENSOR_YUV */
 	int is_isp_used;
 	int is_bayer_raw;
 	int vflip;
@@ -144,11 +144,11 @@ struct sensor_instance {
 struct sensor_list {
 	int use_sensor_list;
 	int used;
-	int csi_sel;
+	int csi_sel;			/* 该sensor/vinc使用了哪个csi，由 vinc@x 节点来建立sensorx -> csix -> vincx的映射关系 */
 	int device_sel;
 	int mclk_id;
-	int sensor_bus_sel;
-	int sensor_bus_type;
+	int sensor_bus_sel;		/* 选择了总线类型下的哪条总线号。vin.c就是通过这个来找到sensor的subdev的，很隐晦，但是耦合性极低 */
+	int sensor_bus_type;	/* 总线类型，比如i2c还是spi等 */
 	int act_bus_sel;
 	int act_bus_type;
 	int act_separate;
@@ -157,7 +157,7 @@ struct sensor_list {
 	char sensor_pos[32];
 	int valid_idx;
 	struct vin_power power[ENUM_MAX_REGU];
-	struct gpio_config gpio[MAX_GPIO_NUM];
+	struct gpio_config gpio[MAX_GPIO_NUM];			/* 用于控制sensor的gpio引脚，如复位、上电等 */
 	struct sensor_instance inst[MAX_DETECT_NUM];
 };
 
@@ -197,8 +197,8 @@ struct vin_module_info {
 struct modules_config {
 	struct vin_module_info modules;
 	struct sensor_list sensors;
-	int flash_used;
-	int act_used;
+	int flash_used;		/* 是否有闪光灯 */
+	int act_used;		/* 摄像头是否有执行器，如控制镜头方向 */
 };
 
 struct vin_md {
@@ -214,16 +214,16 @@ struct vin_md {
 	struct vin_clk_info mipi_clk[VIN_MIPI_MAX_CLK];
 	struct vin_mclk_info mclk[VIN_MAX_CCI];
 	struct vin_clk_info isp_clk[VIN_ISP_MAX_CLK];
-	struct modules_config modules[VIN_MAX_DEV];
+	struct modules_config modules[VIN_MAX_DEV];		/* 每个senor节点的配置，device_type指定的id作为下标 */
 	struct csic_feature_list csic_fl;
 	struct csic_version csic_ver;
 	unsigned int isp_ver_major;
 	unsigned int isp_ver_minor;
 	unsigned int is_empty;
-	unsigned int id;
+	unsigned int id;			/* 由设备树节点 device_id 指定 */
 	unsigned int irq;
 	int use_count;
-	void __iomem *base;
+	void __iomem *base;			/* 寄存器组ioremap基地址 */
 	void __iomem *ccu_base;
 	void __iomem *cmb_top_base;
 	struct media_device media_dev;

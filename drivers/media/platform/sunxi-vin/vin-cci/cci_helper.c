@@ -315,6 +315,7 @@ void cci_dev_exit_helper(struct i2c_driver *sensor_driver)
 }
 EXPORT_SYMBOL_GPL(cci_dev_exit_helper);
 
+/* 设置pad的属性，并绑定到entity、以及添加到media_device链表 */
 static int cci_media_entity_init_helper(struct v4l2_subdev *sd,
 					struct cci_driver *cci_drv)
 {
@@ -322,11 +323,11 @@ static int cci_media_entity_init_helper(struct v4l2_subdev *sd,
 
 	switch (cci_drv->type) {
 	case CCI_TYPE_SENSOR:
-		si = container_of(sd, struct sensor_info, sd);
+		si = container_of(sd, struct sensor_info, sd);	/* 获取 sensor_info  */
 		BUG_ON(si->magic_num && (si->magic_num != SENSOR_MAGIC_NUMBER));
-		si->sensor_pads[SENSOR_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
+		si->sensor_pads[SENSOR_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;		/* sensor pad是源头，即发数据 */
 		sd->entity.function = MEDIA_ENT_F_CAM_SENSOR;
-		return media_entity_pads_init(&sd->entity, SENSOR_PAD_NUM, si->sensor_pads);
+		return media_entity_pads_init(&sd->entity, SENSOR_PAD_NUM, si->sensor_pads);/* pads绑定到entity，并把pads绑定到所属的media_device(如果存在的话) */
 	case CCI_TYPE_ACT:
 		sd->entity.function = MEDIA_ENT_F_LENS;
 		return media_entity_pads_init(&sd->entity, 0, NULL);
@@ -343,7 +344,7 @@ int cci_dev_probe_helper(struct v4l2_subdev *sd, struct i2c_client *client,
 			 struct cci_driver *cci_drv)
 {
 	if (client) {
-		v4l2_i2c_subdev_init(sd, client, sensor_ops);
+		v4l2_i2c_subdev_init(sd, client, sensor_ops);	/* 初始化subdev */
 		/*change sd name to sensor driver name*/
 		snprintf(sd->name, sizeof(sd->name), "%s", cci_drv->name);
 		cci_drv->sd = sd;
@@ -352,11 +353,11 @@ int cci_dev_probe_helper(struct v4l2_subdev *sd, struct i2c_client *client,
 	}
 	v4l2_set_subdev_hostdata(sd, cci_drv);
 	sd->grp_id = VIN_GRP_ID_SENSOR;
-	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;		/* 需要创建设备节点 */
 	if (cci_drv->type != CCI_TYPE_ACT)
-		sd->internal_ops = &sensor_internal_ops;
+		sd->internal_ops = &sensor_internal_ops;	/* subdev绑定 sensor_internal_ops */
 	cci_sys_register(cci_drv);
-	cci_media_entity_init_helper(sd, cci_drv);
+	cci_media_entity_init_helper(sd, cci_drv);		/* 设置pad的属性，并绑定到entity、以及添加到media_device链表 */
 
 	return 0;
 }

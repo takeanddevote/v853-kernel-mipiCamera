@@ -112,14 +112,14 @@ EXPORT_SYMBOL(v4l2_ctrl_query_fill);
 void v4l2_i2c_subdev_init(struct v4l2_subdev *sd, struct i2c_client *client,
 		const struct v4l2_subdev_ops *ops)
 {
-	v4l2_subdev_init(sd, ops);
+	v4l2_subdev_init(sd, ops);	/* 初始化subdev，绑定 v4l2_subdev_ops */
 	sd->flags |= V4L2_SUBDEV_FL_IS_I2C;
 	/* the owner is the same as the i2c_client's driver owner */
 	sd->owner = client->dev.driver->owner;
 	sd->dev = &client->dev;
 	/* i2c_client and v4l2_subdev point to one another */
-	v4l2_set_subdevdata(sd, client);
-	i2c_set_clientdata(client, sd);
+	v4l2_set_subdevdata(sd, client);			/* i2c设备绑定到subdev里 */
+	i2c_set_clientdata(client, sd);	/* 重点：subdev绑定到i2c设备里，这样viv.c就能够通过控制器找到设备，然后获取subdev */
 	/* initialize name */
 	snprintf(sd->name, sizeof(sd->name), "%s %d-%04x",
 		client->dev.driver->name, i2c_adapter_id(client->adapter),
@@ -140,10 +140,10 @@ struct v4l2_subdev *v4l2_i2c_new_subdev_board(struct v4l2_device *v4l2_dev,
 	request_module(I2C_MODULE_PREFIX "%s", info->type);
 
 	/* Create the i2c client */
-	if (info->addr == 0 && probe_addrs)
+	if (info->addr == 0 && probe_addrs)	/* 如果i2c设备已经创建并且probe了，则subdev已经绑定到client私有数据了i */
 		client = i2c_new_probed_device(adapter, info, probe_addrs,
 					       NULL);
-	else
+	else	/* i2c设备还没创建，则新建一个i2c设备，这导致sensor被probe，然后绑定subdev到client私有数据 */
 		client = i2c_new_device(adapter, info);
 
 	/* Note: by loading the module first we are certain that c->driver
@@ -159,11 +159,11 @@ struct v4l2_subdev *v4l2_i2c_new_subdev_board(struct v4l2_device *v4l2_dev,
 	/* Lock the module so we can safely get the v4l2_subdev pointer */
 	if (!try_module_get(client->dev.driver->owner))
 		goto error;
-	sd = i2c_get_clientdata(client);
+	sd = i2c_get_clientdata(client);	/* 获取i2c clinet的私有数据，即sensor的subdev */
 
 	/* Register with the v4l2_device which increases the module's
 	   use count as well. */
-	if (v4l2_device_register_subdev(v4l2_dev, sd))
+	if (v4l2_device_register_subdev(v4l2_dev, sd))	/* 注册subdev到 v4l2_dev 里*/
 		sd = NULL;
 	/* Decrease the module use count to match the first try_module_get. */
 	module_put(client->dev.driver->owner);

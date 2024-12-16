@@ -219,7 +219,7 @@ static const struct file_operations media_devnode_fops = {
 	.poll = media_poll,
 	.llseek = no_llseek,
 };
-
+/* 1、注册 media_devnode 到media总线 2、注册字符设备，ops为 media_devnode_fops */
 int __must_check media_devnode_register(struct media_device *mdev,
 					struct media_devnode *devnode,
 					struct module *owner)
@@ -229,7 +229,7 @@ int __must_check media_devnode_register(struct media_device *mdev,
 
 	/* Part 1: Find a free minor number */
 	mutex_lock(&media_devnode_lock);
-	minor = find_next_zero_bit(media_devnode_nums, MEDIA_NUM_DEVICES, 0);
+	minor = find_next_zero_bit(media_devnode_nums, MEDIA_NUM_DEVICES, 0);	/* 位图 media_devnode_nums 管理media_device的注册 */
 	if (minor == MEDIA_NUM_DEVICES) {
 		mutex_unlock(&media_devnode_lock);
 		pr_err("could not get a free minor\n");
@@ -244,27 +244,27 @@ int __must_check media_devnode_register(struct media_device *mdev,
 	devnode->media_dev = mdev;
 
 	/* Part 1: Initialize dev now to use dev.kobj for cdev.kobj.parent */
-	devnode->dev.bus = &media_bus_type;
+	devnode->dev.bus = &media_bus_type;					/* 一个media_device会挂载在media总线下 */
 	devnode->dev.devt = MKDEV(MAJOR(media_dev_t), devnode->minor);
 	devnode->dev.release = media_devnode_release;
 	if (devnode->parent)
 		devnode->dev.parent = devnode->parent;
 	dev_set_name(&devnode->dev, "media%d", devnode->minor);
-	device_initialize(&devnode->dev);
+	device_initialize(&devnode->dev);				/* 初始化device */
 
 	/* Part 2: Initialize and register the character device */
-	cdev_init(&devnode->cdev, &media_devnode_fops);
+	cdev_init(&devnode->cdev, &media_devnode_fops);		/* 初始化cdev，绑定fops media_devnode_fops  */
 	devnode->cdev.owner = owner;
 	devnode->cdev.kobj.parent = &devnode->dev.kobj;
 
-	ret = cdev_add(&devnode->cdev, MKDEV(MAJOR(media_dev_t), devnode->minor), 1);
+	ret = cdev_add(&devnode->cdev, MKDEV(MAJOR(media_dev_t), devnode->minor), 1);	/* 注册cdev */
 	if (ret < 0) {
 		pr_err("%s: cdev_add failed\n", __func__);
 		goto cdev_add_error;
 	}
 
 	/* Part 3: Add the media device */
-	ret = device_add(&devnode->dev);
+	ret = device_add(&devnode->dev);	/* 注册device，创建设备文件/dev/mediax */
 	if (ret < 0) {
 		pr_err("%s: device_add failed\n", __func__);
 		goto device_add_error;

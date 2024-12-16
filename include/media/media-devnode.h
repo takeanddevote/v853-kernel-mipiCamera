@@ -91,13 +91,13 @@ struct media_devnode {
 	const struct media_file_operations *fops;
 
 	/* sysfs */
-	struct device dev;		/* media device */
+	struct device dev;		/* media device，会挂载在总线media_bus_type下，即/sys/bus/media/devices/，名字为mediax   */
 	struct cdev cdev;		/* character device */
 	struct device *parent;		/* device parent */
 
 	/* device info */
-	int minor;
-	unsigned long flags;		/* Use bitops to access flags */
+	int minor;		/* 注册在位图 media_devnode_nums 的序号  */
+	unsigned long flags;		/* 标志，bit0（MEDIA_FLAG_REGISTERED）表示注册标志  Use bitops to access flags */
 
 	/* callbacks */
 	void (*release)(struct media_devnode *devnode);

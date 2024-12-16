@@ -31,18 +31,24 @@ static DEFINE_MUTEX(clocks_mutex);
 static struct clk *__of_clk_get(struct device_node *np, int index,
 			       const char *dev_id, const char *con_id)
 {
-	struct of_phandle_args clkspec;
+	struct of_phandle_args clkspec;	/* 存储通过phandle找到的节点 */
 	struct clk *clk;
 	int rc;
 
 	if (index < 0)
 		return ERR_PTR(-EINVAL);
-
+	/* index-clock-names的第几项，这个下标则用来索引"clocks"中对应项的phandle，从而获取引用的设备节点。
+		这里的目的是：找到节点np的"clocks"属性的第index项存储的phandle，找到对应的设备节点，并存储到 clkspec 中
+		"#clock-cells"的作用是指明引用phanle的cell个数。
+	 */
 	rc = of_parse_phandle_with_args(np, "clocks", "#clock-cells", index,
 					&clkspec);
 	if (rc)
 		return ERR_PTR(rc);
 
+	/* 找到所引用的生产者设备节点后，从全局链表找到生产者，再创建clk，并绑定 struct clk_core 相关信息，并添加到链表中
+		。后续就可以通过clk来操作 clk_core 的底层函数了。
+	 */
 	clk = __of_clk_get_from_provider(&clkspec, dev_id, con_id);
 	of_node_put(clkspec.np);
 
@@ -71,6 +77,7 @@ static struct clk *__of_clk_get_by_name(struct device_node *np,
 		 * index will be an error code, and of_clk_get() will fail.
 		 */
 		if (name)
+			/* 在 clock-names 属性字符串列表中，查找 name 字符串，并返回它在 clock-names 列表的下标（0-n） */
 			index = of_property_match_string(np, "clock-names", name);
 		clk = __of_clk_get(np, index, dev_id, name);
 		if (!IS_ERR(clk)) {

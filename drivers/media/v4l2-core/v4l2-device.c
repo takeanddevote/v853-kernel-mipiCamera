@@ -30,6 +30,7 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-ctrls.h>
 
+/* 只是初始化 v4l2_device ，绑定 device */
 int v4l2_device_register(struct device *dev, struct v4l2_device *v4l2_dev)
 {
 	if (v4l2_dev == NULL)

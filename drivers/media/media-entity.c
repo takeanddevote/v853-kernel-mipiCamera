@@ -210,7 +210,7 @@ void media_gobj_destroy(struct media_gobj *gobj)
 	/* Remove the object from mdev list */
 	list_del(&gobj->list);
 }
-
+/* pads绑定到entity，并把pads绑定到所属的media_device(如果存在的话) */
 int media_entity_pads_init(struct media_entity *entity, u16 num_pads,
 			   struct media_pad *pads)
 {
@@ -223,7 +223,7 @@ int media_entity_pads_init(struct media_entity *entity, u16 num_pads,
 	if (mdev)
 		mutex_lock(&mdev->graph_mutex);
 
-	for (i = 0; i < num_pads; i++) {
+	for (i = 0; i < num_pads; i++) {	/* 遍历所有的pads */
 		pads[i].entity = entity;
 		pads[i].index = i;
 		if (mdev)

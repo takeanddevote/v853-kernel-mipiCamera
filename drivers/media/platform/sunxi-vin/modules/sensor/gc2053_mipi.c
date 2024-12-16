@@ -1316,28 +1316,30 @@ static int sensor_probe(struct i2c_client *client,
 	struct sensor_info *info;
 	int i;
 
-	info = kzalloc(sizeof(struct sensor_info), GFP_KERNEL);
+	info = kzalloc(sizeof(struct sensor_info), GFP_KERNEL);	/* 创建 sensor_info ，内嵌subdev*/
 	if (info == NULL)
 		return -ENOMEM;
-	sd = &info->sd;
+	sd = &info->sd;			/* sensor_info 内嵌subdev */
 
 	if (client) {
 		for (i = 0; i < SENSOR_NUM; i++) {
-			if (!strcmp(cci_drv[i].name, client->name))
+			if (!strcmp(cci_drv[i].name, client->name)) /* 通过名字获取索引 */
 				break;
 		}
+		/* 初始化subdev、pad、绑定ops */
 		cci_dev_probe_helper(sd, client, &sensor_ops, &cci_drv[i]);
 	} else {
 		cci_dev_probe_helper(sd, client, &sensor_ops, &cci_drv[sensor_dev_id++]);
 	}
 
-	sensor_init_controls(sd, &sensor_ctrl_ops);
+	sensor_init_controls(sd, &sensor_ctrl_ops);	/* 绑定subdev控制接口v4l2_ctrl_ops sensor_ctrl_ops */
 
 	mutex_init(&info->lock);
 
-	info->fmt = &sensor_formats[0];
+	/* 填充 sensor_info 的其他信息 */
+	info->fmt = &sensor_formats[0];			/* 图像格式，比如bayer、bpp等 */
 	info->fmt_pt = &sensor_formats[0];
-	info->win_pt = &sensor_win_sizes[0];
+	info->win_pt = &sensor_win_sizes[0];	/* windows大小，以支持多种分辨率 */
 	info->fmt_num = N_FMTS;
 	info->win_size_num = N_WIN_SIZES;
 	info->sensor_field = V4L2_FIELD_NONE;
@@ -1388,15 +1390,15 @@ static struct i2c_driver sensor_driver[] = {
 	{
 		.driver = {
 			   .owner = THIS_MODULE,
-			   .name = SENSOR_NAME,
+			   .name = SENSOR_NAME,		/* "gc2053_mipi" */
 			   },
-		.probe = sensor_probe,
+		.probe = sensor_probe,			/* vin.c的probe里，解析设备树时，会注册i2c设备，导致sensor_probe调用，然后 */
 		.remove = sensor_remove,
 		.id_table = sensor_id,
 	}, {
 		.driver = {
 			   .owner = THIS_MODULE,
-			   .name = SENSOR_NAME_2,
+			   .name = SENSOR_NAME_2,	/* "gc2053_mipi_2" */
 			   },
 		.probe = sensor_probe,
 		.remove = sensor_remove,
@@ -1410,7 +1412,7 @@ static __init int init_sensor(void)
 	sensor_dev_id = 0;
 
 	for (i = 0; i < SENSOR_NUM; i++)
-		ret = cci_dev_init_helper(&sensor_driver[i]);
+		ret = cci_dev_init_helper(&sensor_driver[i]);	/* 注册i2c_driver */
 
 	return ret;
 }

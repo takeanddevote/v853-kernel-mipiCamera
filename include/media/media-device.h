@@ -142,10 +142,10 @@ struct media_device {
 	struct ida entity_internal_idx;
 	int entity_internal_idx_max;
 
-	struct list_head entities;
-	struct list_head interfaces;
-	struct list_head pads;
-	struct list_head links;
+	struct list_head entities;		/* 管理所有的entity */
+	struct list_head interfaces;	/* 管理所有的接口 */
+	struct list_head pads;			/* 管理所有的pads */
+	struct list_head links;			/* 管理所有的links */
 
 	/* notify callback list invoked when a new entity is registered */
 	struct list_head entity_notify;

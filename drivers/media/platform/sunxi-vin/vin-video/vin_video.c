@@ -4468,7 +4468,7 @@ static int vin_capture_subdev_registered(struct v4l2_subdev *sd)
 	}
 
 	vinc->pipeline_ops = v4l2_get_subdev_hostdata(sd);
-	if (vin_init_video(sd->v4l2_dev, &vinc->vid_cap)) {
+	if (vin_init_video(sd->v4l2_dev, &vinc->vid_cap)) {	/* 创建/dev/videox */
 		vin_err("vin init video!!!!\n");
 		vinc->pipeline_ops = NULL;
 	}

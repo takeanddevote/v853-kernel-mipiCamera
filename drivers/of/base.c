@@ -1492,7 +1492,7 @@ EXPORT_SYMBOL_GPL(of_property_read_string);
 int of_property_match_string(const struct device_node *np, const char *propname,
 			     const char *string)
 {
-	const struct property *prop = of_find_property(np, propname, NULL);
+	const struct property *prop = of_find_property(np, propname, NULL);	/* 获取属性 */
 	size_t l;
 	int i;
 	const char *p, *end;
@@ -1788,7 +1788,7 @@ EXPORT_SYMBOL(of_parse_phandle);
 int of_parse_phandle_with_args(const struct device_node *np, const char *list_name,
 				const char *cells_name, int index,
 				struct of_phandle_args *out_args)
-{
+{	/* list_name="clocks" cells_name="#clock-cells" */
 	if (index < 0)
 		return -EINVAL;
 	return __of_parse_phandle_with_args(np, list_name, cells_name, 0,

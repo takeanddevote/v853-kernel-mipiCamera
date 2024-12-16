@@ -65,10 +65,10 @@ enum media_gobj_type {
  *
  * All objects on the media graph should have this struct embedded
  */
-struct media_gobj {
+struct media_gobj {		/* media_devie通过 media_gobj 来链接管理所有的pads、entity、link等 */
 	struct media_device	*mdev;
 	u32			id;
-	struct list_head	list;
+	struct list_head	list;	/* 作为不同类型的节点添加到media_device的对应链表里 */
 };
 
 #define MEDIA_ENTITY_ENUM_MAX_DEPTH	16
@@ -168,8 +168,8 @@ struct media_link {
  */
 struct media_pad {
 	struct media_gobj graph_obj;	/* must be first field in struct */
-	struct media_entity *entity;
-	u16 index;
+	struct media_entity *entity;	/* pad在哪个entity上 */
+	u16 index;						/* 在entity的pad序号 */
 	unsigned long flags;
 };
 
@@ -259,18 +259,18 @@ enum media_entity_type {
  *    negative.
  */
 struct media_entity {
-	struct media_gobj graph_obj;	/* must be first field in struct */
+	struct media_gobj graph_obj;		/* 作为节点添加到media_device的链表里  must be first field in struct */
 	const char *name;
 	enum media_entity_type obj_type;
-	u32 function;
+	u32 function;				/* entity的作用，比如摄像头 MEDIA_ENT_F_CAM_SENSOR */
 	unsigned long flags;
 
-	u16 num_pads;
+	u16 num_pads;				/* pad的个数 */
 	u16 num_links;
 	u16 num_backlinks;
 	int internal_idx;
 
-	struct media_pad *pads;
+	struct media_pad *pads;		/* pad数组，个数由 num_pads 指定 */
 	struct list_head links;
 
 	const struct media_entity_operations *ops;
